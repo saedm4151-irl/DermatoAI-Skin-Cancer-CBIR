@@ -204,7 +204,7 @@ dermato-ai-cbir/
 │   └── filenames.npy       # Corresponding filenames for retrieved images
 │
 ├── notebooks/
-│   └── training.ipynb      # Full training pipeline (Google Colab)
+│   └── ResNET_ISIC2018.ipynb      # Full training pipeline
 │
 └── README.md
 ```
