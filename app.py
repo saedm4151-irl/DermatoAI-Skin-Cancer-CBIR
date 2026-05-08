@@ -10,9 +10,9 @@ import os
 
 st.set_page_config(page_title="SkinScan AI | Research Dashboard", layout="wide")
 
-MODEL_PATH = 'Updated_best.pth'  #
-FEATURES_PATH = 'features.npy'
-FILENAMES_PATH = 'filenames.npy'
+MODEL_PATH = 'model/Updated_best.pth'  
+FEATURES_PATH = 'cbir_index/features.npy'
+FILENAMES_PATH = 'cbir_index/filenames.npy'
 
 DATASET_IMG_DIR = "dataset/ISIC2018_Task3_Training_Input/" 
 
