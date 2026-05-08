@@ -7,13 +7,13 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 
-# --- 1. CONFIGURATION ---
+
 st.set_page_config(page_title="SkinScan AI | Research Dashboard", layout="wide")
 
-MODEL_PATH = 'Updated_best.pth'  #  best saved model weights
+MODEL_PATH = 'Updated_best.pth'  #
 FEATURES_PATH = 'features.npy'
 FILENAMES_PATH = 'filenames.npy'
-# This is where your original ISIC training images are stored
+
 DATASET_IMG_DIR = "dataset/ISIC2018_Task3_Training_Input/" 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,7 +21,7 @@ CLASS_NAMES = ['Melanoma (MEL)', 'Melanocytic Nevi (NV)', 'Basal Cell Carcinoma 
                'Actinic Keratosis (AKIEC)', 'Benign Keratosis (BKL)', 
                'Dermatofibroma (DF)', 'Vascular Lesion (VASC)']
 
-# --- 2. RESOURCE LOADING ---
+
 @st.cache_resource
 def load_all_resources():
     # Load Model Architecture
@@ -54,7 +54,7 @@ model, features_db, filenames_db = load_all_resources()
 # Create Feature Extractor (Backbone)
 backbone = torch.nn.Sequential(*list(model.children())[:-1])
 
-# --- 3. PREPROCESSING & TTA ---
+
 def get_prediction(img):
     """Runs prediction with Test-Time Augmentation (TTA)"""
     base_transform = transforms.Compose([
@@ -88,7 +88,7 @@ def get_prediction(img):
     
     return idx.item(), conf.item(), avg_probs[0].cpu().numpy(), query_vec
 
-# --- 4. MAIN UI ---
+
 st.title("SkinScan AI: Clinical Reference Tool")
 st.markdown("""
 This system provides an **AI-driven diagnostic prediction** combined with 
@@ -145,7 +145,7 @@ if uploaded_file:
 else:
     st.info("Please upload an image in the sidebar to begin analysis.")
 
-# --- 5. TECHNICAL FOOTER ---
+
 with st.expander("Technical Model Details"):
     st.write("""
     - **Architecture:** ResNet-50
