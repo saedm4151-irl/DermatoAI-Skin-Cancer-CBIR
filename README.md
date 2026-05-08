@@ -1,6 +1,6 @@
 # Dermato-AI: Skin Lesion Classification & CBIR System
 
-> A clinical decision-support tool for skin lesion analysis — combining deep learning classification with content-based image retrieval to give doctors not just a prediction, but visual *proof*.
+> A clinical decision-support tool for skin lesion analysis — combining deep learning classification with content-based image retrieval to give doctors not just a prediction, but visual _proof_.
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
@@ -40,15 +40,15 @@ The solution: **Weighted Focal Loss** for a recall-focused classifier + **CBIR**
 
 ### Dataset Breakdown (ISIC 2018)
 
-| Class | Label | Count | % of Dataset |
-|-------|-------|-------|-------------|
-| Melanocytic Nevi | NV | 6,705 | 66.9% |
-| Melanoma | MEL | 1,113 | 11.1% |
-| Benign Keratosis | BKL | 1,099 | 11.0% |
-| Basal Cell Carcinoma | BCC | 514 | 5.1% |
-| Actinic Keratosis | AKIEC | 327 | 3.3% |
-| Vascular Lesion | VASC | 142 | 1.4% |
-| Dermatofibroma | DF | 115 | 1.1% |
+| Class                | Label | Count | % of Dataset |
+| -------------------- | ----- | ----- | ------------ |
+| Melanocytic Nevi     | NV    | 6,705 | 66.9%        |
+| Melanoma             | MEL   | 1,113 | 11.1%        |
+| Benign Keratosis     | BKL   | 1,099 | 11.0%        |
+| Basal Cell Carcinoma | BCC   | 514   | 5.1%         |
+| Actinic Keratosis    | AKIEC | 327   | 3.3%         |
+| Vascular Lesion      | VASC  | 142   | 1.4%         |
+| Dermatofibroma       | DF    | 115   | 1.1%         |
 
 The imbalance ratio between the majority class (NV) and the rarest class (DF) is nearly **60:1**. A model predicting "NV" for every single image would still achieve ~67% accuracy — completely useless clinically.
 
@@ -61,6 +61,7 @@ This wasn't a straight line. Here's the honest progression:
 ### Stage 1: Baseline — "Why is this so bad?" (~45–60% Accuracy)
 
 The first runs used a frozen ResNet-50 backbone with only the final classification head trained. Results were poor:
+
 - The model converged quickly but plateaued around 45–55% validation accuracy
 - Loss curves showed instability — the learning rate was too aggressive for transfer learning
 - Root cause: one fixed LR across all parameters is wrong for fine-tuning; the pretrained backbone needs to be treated gently
@@ -68,6 +69,7 @@ The first runs used a frozen ResNet-50 backbone with only the final classificati
 ### Stage 2: Differential Fine-Tuning — First Real Progress (~70–79% Accuracy)
 
 Key changes that broke the plateau:
+
 - **Unfroze `layer3` and `layer4`** of ResNet-50 while keeping earlier layers frozen — this let the model adapt ImageNet features to dermoscopic textures without destroying them
 - **Introduced variable/differential learning rates**: lower LR for backbone layers, higher LR for the classification head
 - **Added `WeightedRandomSampler`**: instead of letting the DataLoader pick randomly (which just feeds NV images all day), each batch was rebalanced at the sampler level so every class got fair exposure
@@ -85,6 +87,7 @@ A model with 90% accuracy that misses 40% of Melanomas is dangerous. The switch:
 **To:** `Weighted Focal Loss` (punishes cancer misses disproportionately)
 
 Two mechanisms working together:
+
 - **Class weights**: Melanoma assigned a weight of ~2.5×, forcing larger gradient updates when MEL is misclassified
 - **Focal term** `(1 - p)^γ`: down-weights the loss from easy examples (NV images the model already classifies confidently) and concentrates learning on the hard cases the model keeps getting wrong
 
@@ -94,6 +97,13 @@ Result: raw accuracy slightly dropped to 87.1%, but Melanoma Recall jumped to **
 
 - **448×448 resolution**: Upgraded from standard 224×224. Dermoscopic diagnosis relies heavily on fine-grained texture patterns (pigment network, globules, streaks) that are lost at lower resolution. Doubling the input size meaningfully improved feature quality.
 - **Test-Time Augmentation (TTA)**: At inference, each image is evaluated 3 times (original + horizontal flip + 90° rotation) and predictions are averaged. This reduces variance from incidental orientation and makes the final output more stable and reliable.
+
+### Model Optimization
+
+To ensure the best performance, I tracked the generalization gap. The final model was selected from **Epoch 36**, achieving a peak validation accuracy of **86.87%**.
+
+![Best Model Highlight](assets/best_model_highlight.png)
+![Generalization Gap](assets/generalization_gap.png)
 
 ---
 
@@ -134,12 +144,18 @@ Input Image (448×448×3)
 
 ## Performance
 
+### Training & Validation Results
+
+The model was trained for 40 epochs. The steady rise in both training and validation accuracy indicates a healthy learning rate and effective transfer learning.
+
+![Training Accuracy Curve](assets/accuracy_curve.png)
+
 ### Final Metrics (Best Checkpoint)
 
-| Metric | Score |
-|--------|-------|
-| Weighted F1-Score | **0.871** |
-| Weighted AUC | **0.969** |
+| Metric                      | Score      |
+| --------------------------- | ---------- |
+| Weighted F1-Score           | **0.871**  |
+| Weighted AUC                | **0.969**  |
 | Overall Validation Accuracy | **~89.8%** |
 
 ### Per-Class Recall (Key Cancer Classes)
@@ -153,6 +169,7 @@ Input Image (448×448×3)
 | **Vascular Lesion (VASC)**     | **89.3%**  | High sensitivity for vascular structures              |
 
 ### Confusion Matrix Analysis
+
 The model achieved a weighted **F1-score of 0.871**. The matrix below demonstrates the high sensitivity for critical classes like Melanoma and AKIEC achieved through Weighted Focal Loss.
 
 ![Confusion Matrix](assets/Confusion_Matrix.png)
@@ -197,6 +214,7 @@ dermato-ai-cbir/
 ## Setup & Installation
 
 ### Prerequisites
+
 - Python 3.9+
 - Git LFS (for model weights)
 
@@ -238,6 +256,13 @@ Pillow>=9.0.0
 4. You receive:
    - **Predicted class** with confidence score
    - **Top-3 most visually similar cases** from the training database with cosine similarity scores
+
+   ### User Interface & Output
+
+   The Streamlit interface provides a clear breakdown of the classification probabilities and surfaces visual evidence through the CBIR engine.
+
+![Classification UI](assets/demo_prediction.png)
+![CBIR Similarity UI](assets/demo_cbir.png)
 
 > ⚠️ **Disclaimer**: This tool is a research prototype and is not approved for clinical use. All outputs should be reviewed by a qualified dermatologist.
 
@@ -285,13 +310,14 @@ top_k_indices = similarities.argsort()[-3:][::-1]
 
 The CBIR index is pre-built offline: every training image is passed through the feature extractor, and the resulting 2048-dim vectors are saved to `features.npy`. At inference, a single cosine similarity matrix multiplication retrieves the top-3 matches in milliseconds.
 
-**Clinical value**: Instead of "87% Melanoma" (unactionable), a doctor sees the prediction *alongside* 3 visually similar confirmed cases from the database — turning the AI from a black box into a transparent reference tool.
+**Clinical value**: Instead of "87% Melanoma" (unactionable), a doctor sees the prediction _alongside_ 3 visually similar confirmed cases from the database — turning the AI from a black box into a transparent reference tool.
 
 ---
 
 ## Related Work
 
 This project is directly informed by:
+
 - Barata & Santiago (2021) — CBIR approaches for dermoscopic image analysis
 - Lin et al. (2017) — [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002)
 - ISIC 2018 Challenge — [Task 3: Disease Classification](https://challenge.isic-archive.com/landing/2018/47/)
@@ -303,4 +329,4 @@ This project is directly informed by:
 **Saed** — AI/ML Engineering Student, UAE  
 [LinkedIn](https://linkedin.com/in/saedm4151-irl) · [GitHub](https://github.com/saedm4151-irl)
 
-*Part of an ongoing portfolio in Deep Learning + LLM Engineering, built toward industry internships in the UAE.*
+_Part of an ongoing portfolio in Deep Learning + LLM Engineering, built toward industry internships in the UAE._
