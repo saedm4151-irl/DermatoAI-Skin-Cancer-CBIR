@@ -193,26 +193,16 @@ Epoch 29 │ Train: 99.8% │ Val: 89.8% ← Final saved checkpoint
 ---
 
 ## Project Structure
+```
+
+├── app.py                 # Main Streamlit logic
+├── requirements.txt       # Dependencies
+└── assets/                # Visual documentation
+    ├── accuracy_curve.png
+    └── confusion_matrix.png
 
 ```
-dermato-ai-cbir/
-│
-├── app.py                  # Streamlit application (main entry point)
-├── requirements.txt        # Python dependencies
-├── packages.txt            # System-level dependencies (if needed)
-│
-├── model/
-│   └── Updated_best.pth    # Trained ResNet-50 weights (~100MB, tracked via Git LFS)
-│
-├── cbir_index/
-│   ├── features.npy        # 2048-dim embeddings for all training images
-│   └── filenames.npy       # Corresponding filenames for retrieved images
-│
-├── notebooks/
-│   └── ResNET_ISIC2018.ipynb      # Full training pipeline
-│
-└── README.md
-```
+> **Note:** Model weights (`.pth`) and the CBIR index (`.npy`) are hosted on Hugging Face to keep the repository lightweight.
 
 ---
 
