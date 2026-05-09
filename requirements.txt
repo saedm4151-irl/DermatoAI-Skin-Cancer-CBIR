@@ -4,3 +4,4 @@ torchvision
 Pillow
 numpy
 scikit-learn
+huggingface-hub
