@@ -107,8 +107,11 @@ Result: raw accuracy slightly dropped to 87.1%, but Melanoma Recall jumped to **
 
 To ensure the best performance, I tracked the generalization gap. The final model was selected from **Epoch 36**, achieving a peak validation accuracy of **86.87%**.
 
-![Best Model Highlight](assets/best_model_highlight.png)
-![Generalization Gap](assets/generalization_gap.png)
+<p align="center">
+  <img src="assets/best_model_highlight.png" width="550" alt="Best Model Highlight">
+  <br>
+  <img src="assets/generalization_gap.png" width="550" alt="Generalization Gap">
+</p>
 
 ---
 
@@ -145,7 +148,10 @@ Input Image (448×448×3)
 
 The model was trained for 40 epochs. The steady rise in both training and validation accuracy indicates a healthy learning rate and effective transfer learning.
 
-![Training Accuracy Curve](assets/accuracy_curve.png)
+<p align="center">
+  <img src="assets/accuracy_curve.png" width="600" alt="Training Accuracy Curve">
+</p>
+
 
 ### Final Metrics (Best Checkpoint)
 
@@ -169,7 +175,9 @@ The model was trained for 40 epochs. The steady rise in both training and valida
 
 The model achieved a weighted **F1-score of 0.871**. The matrix below demonstrates the high sensitivity for critical classes like Melanoma and AKIEC achieved through Weighted Focal Loss.
 
-![Confusion Matrix](assets/Confusion_Matrix.png)
+<p align="center">
+  <img src="assets/Confusion_Matrix.png" width="500" alt="Confusion Matrix">
+</p>
 
 ### Training Progression (Selected Epochs)
 
@@ -245,8 +253,13 @@ huggingface-hub>=1.14.0
 
    The Streamlit interface provides a clear breakdown of the classification probabilities and surfaces visual evidence through the CBIR engine.
 
-![Classification UI](assets/demo_prediction.png)
-![CBIR Similarity UI](assets/demo_cbir.png)
+<p align="center">
+  <img src="assets/demo_prediction.png" width="750" alt="Classification UI">
+</p>
+
+<p align="center">
+  <img src="assets/demo_cbir.png" width="750" alt="CBIR Similarity UI">
+</p>
 
 > ⚠️ **Disclaimer**: This tool is a research prototype and is not approved for clinical use. All outputs should be reviewed by a qualified dermatologist.
 
