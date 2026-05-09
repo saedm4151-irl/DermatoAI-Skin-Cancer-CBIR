@@ -6,34 +6,37 @@ from PIL import Image
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
-
+from huggingface_hub import hf_hub_download
 
 st.set_page_config(page_title="SkinScan AI | Research Dashboard", layout="wide")
 
-MODEL_PATH = 'model/Updated_best.pth'  
-FEATURES_PATH = 'cbir_index/features.npy'
-FILENAMES_PATH = 'cbir_index/filenames.npy'
-
-DATASET_IMG_DIR = "dataset/ISIC2018_Task3_Training_Input/" 
+# --- HUGGING FACE CONFIGURATION ---
+HF_MODEL_REPO = "saedm4151-irl/dermato-ai-resnet50
+HF_DATASET_REPO = "saedm4151-irl/skin-cancer-isic-2018"
+HF_IMG_BASE_URL = f"https://huggingface.co/datasets/{HF_DATASET_REPO}/resolve/main/dataset/ISIC2018_Task3_Training_Input/"
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CLASS_NAMES = ['Melanoma (MEL)', 'Melanocytic Nevi (NV)', 'Basal Cell Carcinoma (BCC)', 
                'Actinic Keratosis (AKIEC)', 'Benign Keratosis (BKL)', 
                'Dermatofibroma (DF)', 'Vascular Lesion (VASC)']
 
-
 @st.cache_resource
 def load_all_resources():
-    # Load Model Architecture
+    # 1. Download Model and CBIR files from Hugging Face Model Repo
+    # These are saved to a temporary cache on the Streamlit server
+    model_weight_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="Updated_best.pth")
+    features_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="features.npy")
+    filenames_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="filenames.npy")
+
+    # 2. Load Model Architecture
     model = models.resnet50()
     model.fc = nn.Sequential(
         nn.Dropout(0.5),
         nn.Linear(model.fc.in_features, 7)
     )
     
-    # Load Weights (handling single GPU/CPU)
-    state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
-    # Remove 'module.' prefix if it exists from DataParallel
+    # 3. Load Weights (handling single GPU/CPU and DataParallel prefix)
+    state_dict = torch.load(model_weight_path, map_location=DEVICE)
     from collections import OrderedDict
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
@@ -43,9 +46,9 @@ def load_all_resources():
     model.load_state_dict(new_state_dict)
     model.to(DEVICE).eval()
     
-    # Load CBIR Database
-    features_db = np.load(FEATURES_PATH)
-    filenames_db = np.load(FILENAMES_PATH, allow_pickle=True)
+    # 4. Load CBIR Database
+    features_db = np.load(features_path)
+    filenames_db = np.load(filenames_path, allow_pickle=True)
     
     return model, features_db, filenames_db
 
@@ -133,14 +136,14 @@ if uploaded_file:
     for i, idx in enumerate(top_k_indices):
         with match_cols[i]:
             filename = filenames_db[idx]
-            # Handle potential file extension issues (.jpg)
-            img_path = os.path.join(DATASET_IMG_DIR, f"{filename}.jpg")
             
-            if os.path.exists(img_path):
-                st.image(Image.open(img_path), use_container_width=True)
-                st.write(f"**Similarity Score:** {similarities[idx]:.4f}")
-            else:
-                st.error(f"Image {filename} not found in directory.")
+            # Construct URL for the Hugging Face Dataset image
+            img_url = f"{HF_IMG_BASE_URL}{filename}.jpg"
+            
+            # Display image directly from URL
+            st.image(img_url, use_container_width=True)
+            st.write(f"**Similarity Score:** {similarities[idx]:.4f}")
+            st.caption(f"Reference ID: {filename}")
 
 else:
     st.info("Please upload an image in the sidebar to begin analysis.")
