@@ -2,8 +2,6 @@
 # Project: Dermato-AI: Skin Lesion Classification & CBIR System
 # Author: Saed (https://github.com/saedm4151-irl)
 # Description: Clinical decision-support tool using ResNet-50 & CBIR.
-# License: MIT License
-# Contact: [muhammedsaed.work@gmail.com]
 # --------------------------------------------------------------------------
 
 import streamlit as st
@@ -14,14 +12,15 @@ from PIL import Image
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
+import zipfile
+import io
 from huggingface_hub import hf_hub_download
 
 st.set_page_config(page_title="SkinScan AI | Research Dashboard", layout="wide")
 
-# --- HUGGING FACE CONFIGURATION ---
+# --- CONFIGURATION ---
 HF_MODEL_REPO = "saedm4151-irl/dermato-ai-resnet50"
-HF_DATASET_REPO = "saedm4151-irl/skin-cancer-isic-2018"
-HF_IMG_BASE_URL = f"https://huggingface.co/datasets/{HF_DATASET_REPO}/resolve/main/dataset/ISIC2018_Task3_Training_Input/"
+DATASET_ZIP = "ISIC2018_Complete_Dataset.zip" # Must be in the same folder as app.py
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CLASS_NAMES = ['Melanoma (MEL)', 'Melanocytic Nevi (NV)', 'Basal Cell Carcinoma (BCC)', 
@@ -31,7 +30,6 @@ CLASS_NAMES = ['Melanoma (MEL)', 'Melanocytic Nevi (NV)', 'Basal Cell Carcinoma 
 @st.cache_resource
 def load_all_resources():
     # 1. Download Model and CBIR files from Hugging Face Model Repo
-    # These are saved to a temporary cache on the Streamlit server
     model_weight_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="Updated_best.pth")
     features_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="features.npy")
     filenames_path = hf_hub_download(repo_id=HF_MODEL_REPO, filename="filenames.npy")
@@ -43,7 +41,7 @@ def load_all_resources():
         nn.Linear(model.fc.in_features, 7)
     )
     
-    # 3. Load Weights (handling single GPU/CPU and DataParallel prefix)
+    # 3. Load Weights
     state_dict = torch.load(model_weight_path, map_location=DEVICE)
     from collections import OrderedDict
     new_state_dict = OrderedDict()
@@ -60,28 +58,30 @@ def load_all_resources():
     
     return model, features_db, filenames_db
 
+# Initialize Resources
 model, features_db, filenames_db = load_all_resources()
-
-# Create Feature Extractor (Backbone)
 backbone = torch.nn.Sequential(*list(model.children())[:-1])
 
+@st.cache_resource
+def get_zip_ref():
+    if not os.path.exists(DATASET_ZIP):
+        st.error(f"Dataset archive {DATASET_ZIP} not found! Please ensure it is uploaded to the Space.")
+        return None
+    return zipfile.ZipFile(DATASET_ZIP, 'r')
 
+zf = get_zip_ref()
+
+# --- PREDICTION LOGIC ---
 def get_prediction(img):
-    """Runs prediction with Test-Time Augmentation (TTA)"""
     base_transform = transforms.Compose([
         transforms.Resize((448, 448)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     
-    # Define augmentations for TTA
-    tta_transforms = [
-        lambda x: x, # Original
-        transforms.functional.hflip,
-        transforms.functional.vflip,
-    ]
-    
+    tta_transforms = [lambda x: x, transforms.functional.hflip, transforms.functional.vflip]
     all_probs = []
+    
     with torch.no_grad():
         for t in tta_transforms:
             aug_img = t(img)
@@ -89,22 +89,17 @@ def get_prediction(img):
             output = model(tensor)
             all_probs.append(torch.softmax(output, dim=1))
             
-    # Average probabilities across all views
     avg_probs = torch.stack(all_probs).mean(0)
     conf, idx = torch.max(avg_probs, 1)
     
-    # Get the feature vector (fingerprint) from the original image for CBIR
     original_tensor = base_transform(img).unsqueeze(0).to(DEVICE)
     query_vec = backbone(original_tensor).view(1, -1).detach().cpu().numpy()
     
     return idx.item(), conf.item(), avg_probs[0].cpu().numpy(), query_vec
 
-
+# --- UI LAYOUT ---
 st.title("SkinScan AI: Clinical Reference Tool")
-st.markdown("""
-This system provides an **AI-driven diagnostic prediction** combined with 
-**Content-Based Image Retrieval (CBIR)** to show similar historical cases.
-""")
+st.markdown("AI-driven diagnostic prediction & Content-Based Image Retrieval (CBIR).")
 st.divider()
 
 uploaded_file = st.sidebar.file_uploader("Upload a Dermoscopic Image", type=["jpg", "png", "jpeg"])
@@ -112,13 +107,10 @@ uploaded_file = st.sidebar.file_uploader("Upload a Dermoscopic Image", type=["jp
 if uploaded_file:
     query_img = Image.open(uploaded_file).convert("RGB")
     
-    # Run Inference
-    with st.spinner('Analyzing patterns and searching database...'):
+    with st.spinner('Analyzing patterns...'):
         pred_idx, confidence, probs, query_vec = get_prediction(query_img)
 
-    # Top Section: Results
     col1, col2 = st.columns([1, 1.2])
-    
     with col1:
         st.image(query_img, caption="Uploaded Image", use_container_width=True)
         
@@ -126,42 +118,30 @@ if uploaded_file:
         st.header(f"Prediction: **{CLASS_NAMES[pred_idx]}**")
         st.subheader(f"Confidence: {confidence*100:.1f}%")
         st.progress(confidence)
-        
-        # Display probability for each class
         prob_dict = {CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))}
         st.bar_chart(prob_dict)
 
-    # Bottom Section: CBIR Matches
     st.divider()
     st.subheader("Similar Historical Cases (CBIR Results)")
-    st.write("The following images from the training database share the most similar visual features (textures/structures).")
     
     # Calculate Similarity
     similarities = cosine_similarity(query_vec, features_db).flatten()
     top_k_indices = similarities.argsort()[-3:][::-1]
     
     match_cols = st.columns(3)
-    for i, idx in enumerate(top_k_indices):
-        with match_cols[i]:
-            filename = filenames_db[idx]
-            
-            # Construct URL for the Hugging Face Dataset image
-            img_url = f"{HF_IMG_BASE_URL}{filename}.jpg"
-            
-            # Display image directly from URL
-            st.image(img_url, use_container_width=True)
-            st.write(f"**Similarity Score:** {similarities[idx]:.4f}")
-            st.caption(f"Reference ID: {filename}")
-
+    if zf:
+        for i, idx in enumerate(top_k_indices):
+            with match_cols[i]:
+                filename = filenames_db[idx]
+                internal_path = f"ISIC2018_Task3_Training_Input/{filename}.jpg"
+                
+                try:
+                    img_data = zf.read(internal_path)
+                    match_img = Image.open(io.BytesIO(img_data))
+                    st.image(match_img, use_container_width=True)
+                    st.write(f"**Similarity Score:** {similarities[idx]:.4f}")
+                    st.caption(f"Reference ID: {filename}")
+                except Exception:
+                    st.error(f"Error loading {filename}")
 else:
     st.info("Please upload an image in the sidebar to begin analysis.")
-
-
-with st.expander("Technical Model Details"):
-    st.write("""
-    - **Architecture:** ResNet-50
-    - **Input Resolution:** 448x448 px
-    - **Loss Function:** Weighted Focal Loss (optimized for Melanoma Recall)
-    - **Augmentation:** Test-Time Augmentation (TTA) enabled
-    - **Feature Space:** 2048-dimensional Global Average Pooling embeddings
-    """)
