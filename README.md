@@ -199,7 +199,11 @@ Epoch 29 │ Train: 99.8% │ Val: 89.8% ← Final saved checkpoint
 ├── requirements.txt       # Dependencies
 └── assets/                # Visual documentation
     ├── accuracy_curve.png
-    └── confusion_matrix.png
+    ├── best_model_highlight.png
+    ├── Confusion_Matrix.png
+    ├── demo_cbir.png
+    ├── demo_prediction.png
+    └── generalization_gap.png
 
 ```
 > **Note:** Model weights (`.pth`) and the CBIR index (`.npy`) are hosted on Hugging Face to keep the repository lightweight.
