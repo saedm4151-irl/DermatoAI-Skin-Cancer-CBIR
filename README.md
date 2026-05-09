@@ -15,6 +15,19 @@
 
 ---
 
+## Technology Stack
+
+| Component | Technology |
+| :--- | :--- |
+| **Backbone** | ResNet-50 (Pretrained on ImageNet) |
+| **Framework** | PyTorch / Torchvision |
+| **Criterion** | **Weighted Focal Loss** (Handling Class Imbalance) |
+| **Optimization** | AdamW + CosineAnnealingLR |
+| **Deployment** | Streamlit Cloud + Hugging Face Hub |
+| **Vector Search** | Cosine Similarity (Scikit-Learn) |
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -197,6 +210,8 @@ Epoch 29 │ Train: 99.8% │ Val: 89.8% ← Final saved checkpoint
 
 ├── app.py                 # Main Streamlit logic
 ├── requirements.txt       # Dependencies
+├── notebooks/              # Training & Experimentation
+│   └── ResNET_ISIC2018.ipynb
 └── assets/                # Visual documentation
     ├── accuracy_curve.png
     ├── best_model_highlight.png
