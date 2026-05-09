@@ -239,7 +239,7 @@ streamlit>=1.28.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 Pillow>=9.0.0
-huggingface-hub>=1.14.0
+huggingface-hub>=0.20.0
 ```
 
 ---
