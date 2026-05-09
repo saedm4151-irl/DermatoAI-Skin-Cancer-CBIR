@@ -1,3 +1,11 @@
+# --------------------------------------------------------------------------
+# Project: Dermato-AI: Skin Lesion Classification & CBIR System
+# Author: Saed (https://github.com/saedm4151-irl)
+# Description: Clinical decision-support tool using ResNet-50 & CBIR.
+# License: MIT License
+# Contact: [muhammedsaed.work@gmail.com]
+# --------------------------------------------------------------------------
+
 import streamlit as st
 import torch
 import torch.nn as nn
