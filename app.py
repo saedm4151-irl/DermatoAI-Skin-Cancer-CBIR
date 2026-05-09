@@ -11,7 +11,7 @@ from huggingface_hub import hf_hub_download
 st.set_page_config(page_title="SkinScan AI | Research Dashboard", layout="wide")
 
 # --- HUGGING FACE CONFIGURATION ---
-HF_MODEL_REPO = "saedm4151-irl/dermato-ai-resnet50
+HF_MODEL_REPO = "saedm4151-irl/dermato-ai-resnet50"
 HF_DATASET_REPO = "saedm4151-irl/skin-cancer-isic-2018"
 HF_IMG_BASE_URL = f"https://huggingface.co/datasets/{HF_DATASET_REPO}/resolve/main/dataset/ISIC2018_Task3_Training_Input/"
 
