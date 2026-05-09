@@ -296,6 +296,13 @@ The CBIR index is pre-built offline: every training image is passed through the 
 **Clinical value**: Instead of "87% Melanoma" (unactionable), a doctor sees the prediction _alongside_ 3 visually similar confirmed cases from the database — turning the AI from a black box into a transparent reference tool.
 
 ---
+## Citation & Credit
+
+If you use this codebase, the trained model weights, or the architectural design in your research or commercial products, please provide credit by citing:
+
+**Saed (2026). Dermato-AI: Skin Lesion Classification & CBIR System. Available at: [https://github.com/saedm4151-irl/DermatoAI-Skin-Cancer-CBIR]**
+
+---
 
 ## Related Work
 
