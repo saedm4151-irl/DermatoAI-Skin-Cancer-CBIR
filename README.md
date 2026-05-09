@@ -5,8 +5,13 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-ff4b4b.svg)](https://dermatoai.streamlit.app/)
-[![Dataset](https://img.shields.io/badge/Dataset-ISIC%202018-green.svg)](https://challenge.isic-archive.com/landing/2018/)
+[![Dataset](https://img.shields.io/badge/Dataset-ISIC%202018-green.svg)](https://challenge.isic-archive.com/data/#2018)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+# Dermato-AI: Skin Lesion Classification & CBIR System
+
+[![Hugging Face Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Hugging%20Face-blue)](https://huggingface.co/datasets/saedm4151-irl/skin-cancer-isic-2018)
+[![Hugging Face Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Hugging%20Face-orange)](https://huggingface.co/saedm4151-irl/dermato-ai-resnet50)
 
 ---
 
