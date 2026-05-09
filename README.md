@@ -119,25 +119,17 @@ Input Image (448×448×3)
         │
         ▼
 ┌─────────────────────────────────┐
-│         ResNet-50 Backbone      │
-│  (Pretrained on ImageNet)       │
+│     Hugging Face Hub (Remote)   │ <── Weights & Index loaded via API
+├─────────────────────────────────┤
+│        ResNet-50 Backbone       │
+│  layer1-2: Frozen               │
+│  layer3-4: Fine-Tuned           │
 │                                 │
-│  layer1 ──── FROZEN             │
-│  layer2 ──── FROZEN             │
-│  layer3 ──── FINE-TUNED (1e-5)  │
-│  layer4 ──── FINE-TUNED (1e-4)  │
-│                                 │
-│  AvgPool → 2048-dim vector      │◄── CBIR taps here
+│  AvgPool → 2048-dim vector      │◄── CBIR Index (features.npy)
 └─────────────────────────────────┘
         │
         ▼
-  Dropout (0.4)
-        │
-        ▼
-  FC Layer (2048 → 7)
-        │
-        ▼
-  Softmax → Class Probabilities
+  Dropout → FC Layer → Softmax
 ```
 
 **Optimizer:** AdamW with differential LRs + weight decay (`1e-4`)  
@@ -211,7 +203,6 @@ Epoch 29 │ Train: 99.8% │ Val: 89.8% ← Final saved checkpoint
 ### Prerequisites
 
 - Python 3.9+
-- Git LFS (for model weights)
 
 ### Clone & Install
 
@@ -219,9 +210,6 @@ Epoch 29 │ Train: 99.8% │ Val: 89.8% ← Final saved checkpoint
 # Clone the repo
 https://github.com/saedm4151-irl/DermatoAI-Skin-Cancer-CBIR.git
 cd dermato-ai-cbir
-
-# Pull model weights via Git LFS
-git lfs pull
 
 # Install dependencies
 pip install -r requirements.txt
@@ -239,6 +227,7 @@ streamlit>=1.28.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 Pillow>=9.0.0
+huggingface-hub>=1.14.0
 ```
 
 ---
@@ -292,15 +281,14 @@ The core insight: **a 2048-dim feature vector is a fingerprint of what the model
 Before the final classification layer, ResNet-50 produces a 2048-dimensional embedding that encodes learned visual features. Two images with similar embeddings look similar to the model — similar texture, color distribution, structural patterns.
 
 ```python
-# Feature extraction (strip the FC layer)
-feature_extractor = nn.Sequential(*list(model.children())[:-1])
+from huggingface_hub import hf_hub_download
 
-# At inference
-query_embedding = feature_extractor(query_image)  # shape: (2048,)
+# Fetching the index from the cloud instead of local disk
+features_path = hf_hub_download(repo_id="saedm4151-irl/dermato-ai-resnet50", filename="features.npy")
+training_embeddings = np.load(features_path)
 
-# Retrieve top-K from index
+# Calculate Similarity
 similarities = cosine_similarity(query_embedding, training_embeddings)
-top_k_indices = similarities.argsort()[-3:][::-1]
 ```
 
 The CBIR index is pre-built offline: every training image is passed through the feature extractor, and the resulting 2048-dim vectors are saved to `features.npy`. At inference, a single cosine similarity matrix multiplication retrieves the top-3 matches in milliseconds.
